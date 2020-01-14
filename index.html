@@ -1,0 +1,238 @@
+<!doctype html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<!-- --- ------------------------- ------------------------- ------------------------- ------------------------- -->
+		<title>Teste Web-Front - WeKnow</title>
+		<!-- Css ------------------------- ------------------------- ------------------------- ------------------------- -->
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css" />
+		<!-- JS libs----------------------- ------------------------- ------------------------- ------------------------ -->
+		<script type="text/javascript" src="js/jquery-3.4.1.js"></script>
+		<script type="text/javascript" src="js/popper.min.js"></script>
+		<script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+		<!-- JS  ------------------------- ------------------------- ------------------------- ------------------------- -->
+	</head>
+	
+	<body>				
+		<div class="form-row">
+			<div class="col-6">
+			<div>
+				<h1 class="ml-5 pt-2">Produtos</h1>
+			</div>
+				<div id="resultadoProduto"></div>
+			</div>
+			<div class="col-6">
+				<form id="cadProduto" class="form-horizontal" novalidate="novalidate" method="POST">
+					<div>
+						<h1 class="ml-5 pt-2">Cadastro de Produtos</h1>
+					</div>
+					<div class="form-group">
+						<label for="txtDescricao">Descrição</label>
+						<input type="text" class="form-control" id="txtDescricao" placeholder="Descrição do produto">
+					</div>
+					<div class="form-actions">
+						<button type="button" class="btn btn-primary" onClick="cadastrar()">Confirmar</button>
+						<button type="reset" class="btn">Cancelar</button>
+					</div>
+				</form>
+				
+				<!-- Fiz um formulario para cadastro e outro para edição, pois acho mais fácil assim -------------------------------------------------------------------------------- -->
+				
+				<form id="editProduto" class="form-horizontal" novalidate="novalidate" method="POST" style="display:none">
+					<div>
+						<h1 class="ml-5 pt-2">Edição de produtos</h1>
+					</div>
+					<div class="form-group">
+						<label for="txtID">ID</label>
+						<input type="text" class="form-control" id="txtID" placeholder="ID - Invisivel">					
+					</div>
+					<div class="form-group">
+						<label for="txtDescricaoEdit">Descrição</label>
+						<input type="text" class="form-control" id="txtDescricaoEdit" placeholder="Descrição do produto">
+					</div>
+					<div class="form-actions">
+						<button type="button" class="btn btn-primary" onClick="editar()">Confirmar</button>
+						<button type="reset" class="btn">Cancelar</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</body>
+	
+	
+	
+	
+	<script>	
+		$(document).ready(function() {
+		//-- Funções AJAX para POST, GET e etc...
+		ajax = new Object();
+		ajax.post = function(cfg){ 
+			var def = new ajaxRequestDefault(); 
+			cfg = verifyObjectData(cfg);  
+			var config = $.extend(def, cfg); 
+			$.ajax(config); 
+		};
+		ajax.get = function(cfg){ 
+			var def = new ajaxRequestDefault(); 
+			cfg.type = "GET"; 
+			cfg = verifyObjectData(cfg); 
+			var config = $.extend(def, cfg);  
+			$.ajax(config); 
+		};
+		ajax.put = function(cfg){ 
+			var def = new ajaxRequestDefault(); 
+			cfg.type = "PUT"; 
+			cfg = verifyObjectData(cfg); 
+			var config = $.extend(def, cfg);  
+			$.ajax(config); 
+		}; 
+		ajax.del = function(cfg){ 
+			var def = new ajaxRequestDefault(); 
+			cfg.type = "DELETE"; 
+			cfg = verifyObjectData(cfg); 
+			var config = $.extend(def, cfg);  
+			$.ajax(config); 
+		}; 
+		//--
+		function verifyObjectData(cfg){ 
+			if(cfg.data){
+				if(isObject(cfg.data)) { 
+					cfg.data = JSON.stringify(cfg.data); 
+				} 
+			} 
+			return cfg;
+		}
+		function ajaxRequestDefault() {
+			var def= { 
+				url: null, 
+				dataType: 'json', 
+				contentType: "application/json; charset=UTF-8", 
+				type: 'POST',
+				success: function(){}, 
+				error: function (rest) {   
+					alert("error = " + rest.statusText);   } 
+				};   
+			return def; 
+		}
+		function isObject(o){  
+			return $.isArray(o) | $.isPlainObject(o) | $.isFunction(o);
+		};		
+		//---------------------------------------------------------------------------------
+		cadastrar = function(){ 			
+			var descricao = document.getElementById("txtDescricao").value;
+			descricao = descricao.trim();
+			if(descricao == null || descricao == ""){				
+				document.getElementById("txtDescricao").focus();
+				alert("Descrição não informada");
+				return false;
+			}else{							
+				var newProduto = new Object();  
+				newProduto.descricao		= descricao; 							   				 				    
+				var cfg = { 						
+					url: "http://18.231.42.102:3000/api/produtos",    
+					data: newProduto,						
+					success: function (msg) {							 						
+						alert("Produto cadastrado com sucesso");						
+						buscaProdutos(); //-- Atualiza tabela
+						$('#cadProduto').each (function(){
+							this.reset(); //-- reseta formulario
+						});
+					}
+				};
+				ajax.post(cfg);  				 	
+			}	
+		};
+		
+		buscaProdutos = function(){
+			var html = "";
+			var listaDeProdutos = new Object();
+			var cfg = { 					
+				url: "http://18.231.42.102:3000/api/produtos",
+				success: function (response) { 										
+					listaProdutos(response);
+				}   
+			}; 
+			ajax.get(cfg);
+			//--
+		};
+		buscaProdutos(); //-- executa quando entra na página
+		
+		listaProdutos = function(listaDeProdutos){			
+			if(listaDeProdutos.length > 0){ //-- aquela confirmação de que ta tudo OK
+				html 	= "<table class='table' id='listaProd'>";
+				html	+= "<thead>";
+				html	+= "<tr>";
+				html	+= "<th style='display:none'>Id</th>";
+				html	+= "<th>Descrição</th>";		
+				html	+= "<th></th>";
+				html	+= "<th></th>";
+				html	+= "</tr>";		
+				html	+= "</thead>"					
+				html	+= "<tbody>";		
+				for(var i=0; i<listaDeProdutos.length; i++){					
+					html 	+= "<tr>";
+					html 	+= "<td style='display:none'>" + listaDeProdutos[i]._id	+ "</td>";
+					html 	+= "<td>"+ listaDeProdutos[i].descricao	+ "</td>";							
+					html 	+= "<td class='center'><a title='Editar' style='cursor:pointer;' onClick='exibirEdicao(" + JSON.stringify(listaDeProdutos[i]) + ")'> Editar </a></td>";
+					html 	+= "<td class='center'><a title='Deletar' style='cursor:pointer;' onClick='confirmaDeletar(\""+listaDeProdutos[i]._id+"\")'>Excluir </a> </td>";
+					html 	+= "</tr>";  
+				}		
+				html	+= "</tbody>";
+				html	+= "</table>";				
+			}else{
+				html = "<tr><td colspan='5'>Nenhum registro encontrado</td></tr>";
+			}
+			$("#resultadoProduto").html(html); 
+		};		
+		
+		exibirEdicao = function(listaDeProdutos){
+			$("#cadProduto").hide();
+			$("#editProduto").show();
+			//--			
+			$("#txtID").val(listaDeProdutos._id);			
+			$("#txtDescricaoEdit").val(listaDeProdutos.descricao);			
+		};
+		
+		editar = function(){
+			var id = document.getElementById("txtID").value;
+			var descricao = document.getElementById("txtDescricaoEdit").value;
+			//
+			descricao = descricao.trim();			
+			if(descricao == null || descricao == ""){				
+				document.getElementById("txtDescricaoEdit").focus();
+				alert("Descrição não informada");
+				return false;
+			}else{							
+				var newProduto = new Object();  
+				newProduto.descricao	= descricao;
+				newProduto._id			= id;
+				var cfg = { 						
+					url: "http://18.231.42.102:3000/api/produtos/" + id,    
+					data: newProduto,						
+					success: function (msg) {							 						
+						alert("Produto editado com sucesso");						
+						buscaProdutos(); //-- Atualiza tabela
+						$('#editProduto').each (function(){
+							this.reset(); //-- reseta formulario
+						});
+					}
+				};
+				ajax.put(cfg);  				 	
+			}
+		};
+		
+		confirmaDeletar = function(id){
+			if(confirm("Você realmente deseja apagar este registro?")){				
+				var cfg = { 						
+					url: "http://18.231.42.102:3000/api/produtos/" + id,					
+					success: function (msg) {							 						
+						alert("Produto apagado com sucesso");						
+						buscaProdutos(); //-- Atualiza tabela						
+					}
+				};
+				ajax.del(cfg);  
+			}
+		};	
+		});
+	</script>
+<html>
